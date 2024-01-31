@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Dispenser Control</title>
+</head>
+<body>
+  <h1>Hello, Medicine Dispenser Control!</h1>
+  <button id="dispenseButton">Dispense Medicine</button>
+
+  <script>
+    document.getElementById('dispenseButton').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/dispense', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ containerIndex: 0 }),  // Assuming you want to dispense for container 0
+        });
+
+        const data = await response.json();
+        alert(data.message);  // Display the message from the server
+      } catch (error) {
+        console.error('Error dispensing medicine:', error);
+        alert('Error dispensing medicine. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
+
