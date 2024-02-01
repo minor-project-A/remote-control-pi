@@ -5,20 +5,50 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Medicine Dispenser Control</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://momentjs.com/downloads/moment-timezone-with-data.min.js"></script>
+  <style>
+    .container {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
   <h1>Hello, Medicine Dispenser Control!</h1>
+
+  <div class="container" id="container1">
+    <h2>Medicine Container 1</h2>
+    <p id="medicineName1">Medicine Name: Loading...</p>
+    <p id="quantity1">Remaining Quantity: Loading...</p>
+    <label for="setAlarmTime1">Set Alarm Time:</label>
+    <input type="time" id="setAlarmTime1" name="setAlarmTime1">
+    <button onclick="setAlarm(1)">Set Alarm</button>
+  </div>
+
+  <div class="container" id="container2">
+    <h2>Medicine Container 2</h2>
+    <p id="medicineName2">Medicine Name: Loading...</p>
+    <p id="quantity2">Remaining Quantity: Loading...</p>
+    <label for="setAlarmTime2">Set Alarm Time:</label>
+    <input type="text" id="setAlarmTime2" name="setAlarmTime2">
+    <button onclick="setAlarm(2)">Set Alarm</button>
+  </div>
+
   <button id="dispenseButton">Dispense Medicine</button>
 
   <script>
     document.getElementById('dispenseButton').addEventListener('click', async () => {
       try {
+        const containerIndex = 1; // Assuming a default container index for testing
+        const infoType = 'someInfoType'; // Replace with your actual info type
+        const setAlarm = true; // Assuming the alarm is set for testing
+
         const response = await fetch('/dispense', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ containerIndex: 0 }),  // Assuming you want to dispense for container 0
+          body: JSON.stringify({ containerIndex, infoType, setAlarm }),
         });
 
         const data = await response.json();
@@ -28,7 +58,44 @@
         alert('Error dispensing medicine. Please try again.');
       }
     });
+
+    // Set a working alarm for both containers
+    function setWorkingAlarm() {
+      const currentTime = moment().tz('Asia/Kolkata');
+      
+      // Set alarm for Container 1, 2 minutes from now
+      const alarmTime1 = currentTime.clone().add(2, 'minutes').format('HH:mm');
+      document.getElementById('setAlarmTime1').value = alarmTime1;
+
+      // Set alarm for Container 2, 5 minutes from now
+      const alarmTime2 = currentTime.clone().add(5, 'minutes').format('HH:mm');
+      document.getElementById('setAlarmTime2').value = alarmTime2;
+    }
+
+    // Call the function to set the working alarm on page load
+    setWorkingAlarm();
+
+    function setAlarm(containerIndex) {
+      const setAlarmTime = document.getElementById(`setAlarmTime${containerIndex}`).value;
+
+      // Get the current time and date in 'Asia/Kolkata' timezone
+      const currentTime = moment().tz('Asia/Kolkata');
+
+      // Parse the input time and set it to today's date
+      const setTime = moment.tz(`2024-02-01T${setAlarmTime}:00`, 'Asia/Kolkata');
+
+      // Check if the parsed time is in the future
+      if (setTime.isAfter(currentTime)) {
+        const timeDiff = setTime.diff(currentTime);
+
+        // Set a timeout to trigger the alert when the time is reached
+        setTimeout(() => {
+          alert(`Alarm for Container ${containerIndex} is set for ${setTime.format('HH:mm')} in Asia/Kolkata timezone.`);
+        }, timeDiff);
+      } else {
+        alert(`Please set a future time for the alarm.`);
+      }
+    }
   </script>
 </body>
 </html>
-
