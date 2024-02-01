@@ -5,8 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Medicine Dispenser Control</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-  <script src="https://momentjs.com/downloads/moment-timezone-with-data.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://momentjs.com/downloads/moment-timezone-with-data.min.js"></script>
+
   <style>
     .container {
       margin-bottom: 20px;
@@ -27,6 +29,9 @@
     <label for="remainingTabletsA">Remaining Tablets:</label>
     <input type="number" id="remainingTabletsA" name="remainingTabletsA" min="0">
     <br>
+    <label for="lastDispensedTimeA">Last Dispensed Time:</label>
+    <input type="text" id="lastDispensedTimeA" name="lastDispensedTimeA" readonly>
+    <br>
     <button onclick="updateContainerData('ConA')">Update Container</button>
     <button onclick="setAlarm('ConA')">Set Alarm</button>
     <button onclick="dispenseMedicine('ConA')">Dispense Medicine</button>
@@ -43,6 +48,9 @@
     <label for="remainingTabletsB">Remaining Tablets:</label>
     <input type="number" id="remainingTabletsB" name="remainingTabletsB" min="0">
     <br>
+    <label for="lastDispensedTimeB">Last Dispensed Time:</label>
+    <input type="text" id="lastDispensedTimeB" name="lastDispensedTimeB" readonly>
+    <br>
     <button onclick="updateContainerData('ConB')">Update Container</button>
     <button onclick="setAlarm('ConB')">Set Alarm</button>
     <button onclick="dispenseMedicine('ConB')">Dispense Medicine</button>
@@ -51,7 +59,6 @@
   <script>
     async function updateFrontendData(containerId) {
       try {
-        // Fetch data for the specified container
         const containerData = await fetch(`/getContainerData/${containerId}`);
         if (containerData.ok) {
           const containerJson = await containerData.json();
@@ -69,10 +76,12 @@
       if (containerElement) {
         const nameElement = containerElement.querySelector(`#medicineName${containerId.charAt(containerId.length - 1)}`);
         const remainingElement = containerElement.querySelector(`#remainingTablets${containerId.charAt(containerId.length - 1)}`);
+        const lastDispensedTimeElement = containerElement.querySelector(`#lastDispensedTime${containerId.charAt(containerId.length - 1)}`);
 
         if (data) {
           nameElement.value = data.name;
           remainingElement.value = data.remaining;
+          lastDispensedTimeElement.value = data.lastDispensedTime || '';  // Set last dispensed time if available
         } else {
           console.error(`Data for Container ${containerId} is undefined.`);
         }
@@ -85,15 +94,11 @@
       const remainingElement = document.getElementById(`remainingTablets${containerId.charAt(containerId.length - 1)}`);
       let remainingTablets = parseInt(remainingElement.value);
 
-      // Check if there are remaining tablets to dispense
       if (remainingTablets > 0) {
-        // Decrease the remaining tablets by 1
         remainingTablets--;
-
-        // Update the UI
         remainingElement.value = remainingTablets;
-
-        // Send the updated data to the server
+        const lastDispensedTimeElement = document.getElementById(`lastDispensedTime${containerId.charAt(containerId.length - 1)}`);
+        lastDispensedTimeElement.value = moment().format('YYYY-MM-DD HH:mm:ss');
         const nameElement = document.getElementById(`medicineName${containerId.charAt(containerId.length - 1)}`);
         const timeElement = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`);
         const name = nameElement.value;
@@ -105,7 +110,7 @@
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ name, time, remaining: remainingTablets }),
+            body: JSON.stringify({ name, time, remaining: remainingTablets, lastDispensedTime: lastDispensedTimeElement.value }),
           });
 
           if (response.ok) {
@@ -116,8 +121,6 @@
         } catch (error) {
           console.error(`Error updating container data on the server for Container ${containerId}: ${error}`);
         }
-
-        // Display an alert (you can remove this if not needed)
         alert(`Medicine dispensed for Container ${containerId}. Remaining Tablets: ${remainingTablets}`);
       } else {
         alert(`No remaining tablets for Container ${containerId}.`);
@@ -140,8 +143,6 @@
         alert(`Please set a future time for the alarm.`);
       }
     }
-
-    // Call the function to set the working alarm on page load
     updateFrontendData('ConA');
     updateFrontendData('ConB');
   </script>

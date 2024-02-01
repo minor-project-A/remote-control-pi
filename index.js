@@ -12,7 +12,7 @@ const firebaseConfig = {
   messagingSenderId: "768247340002",
   appId: "1:768247340002:web:e0caa89eda6a814602b7bb",
   measurementId: "G-XWT10HCP32",
-    databaseURL: "https://remote-control-pi-6c1c2-default-rtdb.asia-southeast1.firebasedatabase.app"
+  databaseURL: "https://remote-control-pi-6c1c2-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -23,24 +23,22 @@ async function startServer() {
   express_app.use(bodyParser.json());
   express_app.use(express.static('public'));
 
-  // Function to initialize container data
   async function initializeContainerData(containerId, name, time, remaining) {
     const database = getDatabase(app);
     const containerRef = ref(database, `containers/${containerId}`);
     const containerData = await get(containerRef);
 
     if (!containerData.exists()) {
-      // Container doesn't exist, initialize with default values
       await set(containerRef, {
         name: name,
         time: time,
         remaining: remaining,
+        lastDispensedTime: null, /
       });
       console.log(`Container ${containerId} initialized with default values.`);
     }
   }
 
-  // Initialize data for ConA and ConB if they don't exist yet
   await initializeContainerData('ConA', 'DefaultNameA', '08:00', 10);
   await initializeContainerData('ConB', 'DefaultNameB', '10:00', 15);
 
@@ -51,7 +49,9 @@ async function startServer() {
       res.json({ message: responseMessage });
 
       const database = getDatabase(app);
-      await set(ref(database, `containers/${containerIndex}/dispensed`), true);
+      const containerRef = ref(database, `containers/${containerIndex}`);
+      await set(containerRef.child('dispensed'), true);
+      await set(containerRef.child('lastDispensedTime'), new Date().toISOString()); 
     } catch (error) {
       console.error('Error dispensing medicine:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -78,12 +78,13 @@ async function startServer() {
   express_app.post('/updateContainerData/:containerId', async (req, res) => {
     try {
       const containerId = req.params.containerId;
-      const { name, time, remaining } = req.body;
+      const { name, time, remaining, lastDispensedTime } = req.body; 
       const database = getDatabase(app);
       await set(ref(database, `containers/${containerId}`), {
         name: name,
         time: time,
         remaining: remaining,
+        lastDispensedTime: lastDispensedTime,
       });
       res.json({ message: 'Container data updated successfully' });
     } catch (error) {
