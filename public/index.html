@@ -16,86 +16,134 @@
 <body>
   <h1>Hello, Medicine Dispenser Control!</h1>
 
-  <div class="container" id="container1">
-    <h2>Medicine Container 1</h2>
-    <p id="medicineName1">Medicine Name: Loading...</p>
-    <p id="quantity1">Remaining Quantity: Loading...</p>
-    <label for="setAlarmTime1">Set Alarm Time:</label>
-    <input type="time" id="setAlarmTime1" name="setAlarmTime1">
-    <button onclick="setAlarm(1)">Set Alarm</button>
+  <div class="container" id="ConA">
+    <h2>Medicine Container A</h2>
+    <label for="medicineNameA">Medicine Name:</label>
+    <input type="text" id="medicineNameA" name="medicineNameA">
+    <br>
+    <label for="setAlarmTimeA">Set Alarm Time:</label>
+    <input type="time" id="setAlarmTimeA" name="setAlarmTimeA">
+    <br>
+    <label for="remainingTabletsA">Remaining Tablets:</label>
+    <input type="number" id="remainingTabletsA" name="remainingTabletsA" min="0">
+    <br>
+    <button onclick="updateContainerData('ConA')">Update Container</button>
+    <button onclick="setAlarm('ConA')">Set Alarm</button>
+    <button onclick="dispenseMedicine('ConA')">Dispense Medicine</button>
   </div>
 
-  <div class="container" id="container2">
-    <h2>Medicine Container 2</h2>
-    <p id="medicineName2">Medicine Name: Loading...</p>
-    <p id="quantity2">Remaining Quantity: Loading...</p>
-    <label for="setAlarmTime2">Set Alarm Time:</label>
-    <input type="text" id="setAlarmTime2" name="setAlarmTime2">
-    <button onclick="setAlarm(2)">Set Alarm</button>
+  <div class="container" id="ConB">
+    <h2>Medicine Container B</h2>
+    <label for="medicineNameB">Medicine Name:</label>
+    <input type="text" id="medicineNameB" name="medicineNameB">
+    <br>
+    <label for="setAlarmTimeB">Set Alarm Time:</label>
+    <input type="time" id="setAlarmTimeB" name="setAlarmTimeB">
+    <br>
+    <label for="remainingTabletsB">Remaining Tablets:</label>
+    <input type="number" id="remainingTabletsB" name="remainingTabletsB" min="0">
+    <br>
+    <button onclick="updateContainerData('ConB')">Update Container</button>
+    <button onclick="setAlarm('ConB')">Set Alarm</button>
+    <button onclick="dispenseMedicine('ConB')">Dispense Medicine</button>
   </div>
-
-  <button id="dispenseButton">Dispense Medicine</button>
 
   <script>
-    document.getElementById('dispenseButton').addEventListener('click', async () => {
+    async function updateFrontendData(containerId) {
       try {
-        const containerIndex = 1; // Assuming a default container index for testing
-        const infoType = 'someInfoType'; // Replace with your actual info type
-        const setAlarm = true; // Assuming the alarm is set for testing
-
-        const response = await fetch('/dispense', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ containerIndex, infoType, setAlarm }),
-        });
-
-        const data = await response.json();
-        alert(data.message);  // Display the message from the server
+        // Fetch data for the specified container
+        const containerData = await fetch(`/getContainerData/${containerId}`);
+        if (containerData.ok) {
+          const containerJson = await containerData.json();
+          updateContainerData(containerId, containerJson);
+        } else {
+          console.error(`Error fetching data for Container ${containerId}: ${containerData.statusText}`);
+        }
       } catch (error) {
-        console.error('Error dispensing medicine:', error);
-        alert('Error dispensing medicine. Please try again.');
+        console.error(`Error updating frontend data for Container ${containerId}: ${error}`);
       }
-    });
-
-    // Set a working alarm for both containers
-    function setWorkingAlarm() {
-      const currentTime = moment().tz('Asia/Kolkata');
-      
-      // Set alarm for Container 1, 2 minutes from now
-      const alarmTime1 = currentTime.clone().add(2, 'minutes').format('HH:mm');
-      document.getElementById('setAlarmTime1').value = alarmTime1;
-
-      // Set alarm for Container 2, 5 minutes from now
-      const alarmTime2 = currentTime.clone().add(5, 'minutes').format('HH:mm');
-      document.getElementById('setAlarmTime2').value = alarmTime2;
     }
 
-    // Call the function to set the working alarm on page load
-    setWorkingAlarm();
+    async function updateContainerData(containerId, data) {
+      const containerElement = document.getElementById(containerId);
+      if (containerElement) {
+        const nameElement = containerElement.querySelector(`#medicineName${containerId.charAt(containerId.length - 1)}`);
+        const remainingElement = containerElement.querySelector(`#remainingTablets${containerId.charAt(containerId.length - 1)}`);
 
-    function setAlarm(containerIndex) {
-      const setAlarmTime = document.getElementById(`setAlarmTime${containerIndex}`).value;
+        if (data) {
+          nameElement.value = data.name;
+          remainingElement.value = data.remaining;
+        } else {
+          console.error(`Data for Container ${containerId} is undefined.`);
+        }
+      } else {
+        console.error(`Container element with ID ${containerId} not found.`);
+      }
+    }
 
-      // Get the current time and date in 'Asia/Kolkata' timezone
+    async function dispenseMedicine(containerId) {
+      const remainingElement = document.getElementById(`remainingTablets${containerId.charAt(containerId.length - 1)}`);
+      let remainingTablets = parseInt(remainingElement.value);
+
+      // Check if there are remaining tablets to dispense
+      if (remainingTablets > 0) {
+        // Decrease the remaining tablets by 1
+        remainingTablets--;
+
+        // Update the UI
+        remainingElement.value = remainingTablets;
+
+        // Send the updated data to the server
+        const nameElement = document.getElementById(`medicineName${containerId.charAt(containerId.length - 1)}`);
+        const timeElement = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`);
+        const name = nameElement.value;
+        const time = timeElement.value;
+
+        try {
+          const response = await fetch(`/updateContainerData/${containerId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, time, remaining: remainingTablets }),
+          });
+
+          if (response.ok) {
+            console.log(`Container ${containerId} data updated successfully on the server.`);
+          } else {
+            console.error(`Error updating data for Container ${containerId} on the server: ${response.statusText}`);
+          }
+        } catch (error) {
+          console.error(`Error updating container data on the server for Container ${containerId}: ${error}`);
+        }
+
+        // Display an alert (you can remove this if not needed)
+        alert(`Medicine dispensed for Container ${containerId}. Remaining Tablets: ${remainingTablets}`);
+      } else {
+        alert(`No remaining tablets for Container ${containerId}.`);
+      }
+    }
+
+    function setAlarm(containerId) {
+      const setAlarmTime = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`).value;
+
       const currentTime = moment().tz('Asia/Kolkata');
-
-      // Parse the input time and set it to today's date
       const setTime = moment.tz(`2024-02-01T${setAlarmTime}:00`, 'Asia/Kolkata');
 
-      // Check if the parsed time is in the future
       if (setTime.isAfter(currentTime)) {
         const timeDiff = setTime.diff(currentTime);
 
-        // Set a timeout to trigger the alert when the time is reached
         setTimeout(() => {
-          alert(`Alarm for Container ${containerIndex} is set for ${setTime.format('HH:mm')} in Asia/Kolkata timezone.`);
+          alert(`Alarm for Container ${containerId} is set for ${setTime.format('HH:mm')} in Asia/Kolkata timezone.`);
         }, timeDiff);
       } else {
         alert(`Please set a future time for the alarm.`);
       }
     }
+
+    // Call the function to set the working alarm on page load
+    updateFrontendData('ConA');
+    updateFrontendData('ConB');
   </script>
 </body>
 </html>
