@@ -32,9 +32,8 @@
     <label for="lastDispensedTimeA">Last Dispensed Time:</label>
     <input type="text" id="lastDispensedTimeA" name="lastDispensedTimeA" readonly>
     <br>
-    <button onclick="updateContainerData('ConA')">Update Container</button>
     <button onclick="setAlarm('ConA')">Set Alarm</button>
-    <button onclick="dispenseMedicine('ConA')">Dispense Medicine</button>
+    <button onclick="dispenseMedicine('ConA')">Update Container</button>
   </div>
 
   <div class="container" id="ConB">
@@ -51,9 +50,8 @@
     <label for="lastDispensedTimeB">Last Dispensed Time:</label>
     <input type="text" id="lastDispensedTimeB" name="lastDispensedTimeB" readonly>
     <br>
-    <button onclick="updateContainerData('ConB')">Update Container</button>
     <button onclick="setAlarm('ConB')">Set Alarm</button>
-    <button onclick="dispenseMedicine('ConB')">Dispense Medicine</button>
+    <button onclick="dispenseMedicine('ConB')">Update Container</button>
   </div>
 
   <script>
@@ -77,11 +75,11 @@
         const nameElement = containerElement.querySelector(`#medicineName${containerId.charAt(containerId.length - 1)}`);
         const remainingElement = containerElement.querySelector(`#remainingTablets${containerId.charAt(containerId.length - 1)}`);
         const lastDispensedTimeElement = containerElement.querySelector(`#lastDispensedTime${containerId.charAt(containerId.length - 1)}`);
-
+        
         if (data) {
           nameElement.value = data.name;
           remainingElement.value = data.remaining;
-          lastDispensedTimeElement.value = data.lastDispensedTime || '';  // Set last dispensed time if available
+          lastDispensedTimeElement.value = data.lastDispensedTime || '';
         } else {
           console.error(`Data for Container ${containerId} is undefined.`);
         }
@@ -131,7 +129,8 @@
       const setAlarmTime = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`).value;
 
       const currentTime = moment().tz('Asia/Kolkata');
-      const setTime = moment.tz(`2024-02-01T${setAlarmTime}:00`, 'Asia/Kolkata');
+    const currentDate = moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
+        const setTime = moment.tz(`${currentDate}T${setAlarmTime}:00`, 'Asia/Kolkata');
 
       if (setTime.isAfter(currentTime)) {
         const timeDiff = setTime.diff(currentTime);

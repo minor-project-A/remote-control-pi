@@ -33,7 +33,7 @@ async function startServer() {
         name: name,
         time: time,
         remaining: remaining,
-        lastDispensedTime: null, /
+        lastDispensedTime: null, 
       });
       console.log(`Container ${containerId} initialized with default values.`);
     }
