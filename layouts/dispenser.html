@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicine Dispenser Control</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://momentjs.com/downloads/moment-timezone-with-data.min.js"></script>
+
+  <style>
+    .container {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello, Medicine Dispenser Control!</h1>
+
+  <div class="container" id="ConA">
+    <h2>Medicine Container A</h2>
+    <label for="medicineNameA">Medicine Name:</label>
+    <input type="text" id="medicineNameA" name="medicineNameA">
+    <br>
+    <label for="setAlarmTimeA">Set Alarm Time:</label>
+    <input type="time" id="setAlarmTimeA" name="setAlarmTimeA">
+    <br>
+    <label for="remainingTabletsA">Remaining Tablets:</label>
+    <input type="number" id="remainingTabletsA" name="remainingTabletsA" min="0">
+    <br>
+    <label for="lastDispensedTimeA">Last Dispensed Time:</label>
+    <input type="text" id="lastDispensedTimeA" name="lastDispensedTimeA" readonly>
+    <br>
+    <button onclick="setAlarm('ConA')">Set Alarm</button>
+    <button onclick="dispenseMedicine('ConA')">Update Container</button>
+  </div>
+
+  <div class="container" id="ConB">
+    <h2>Medicine Container B</h2>
+    <label for="medicineNameB">Medicine Name:</label>
+    <input type="text" id="medicineNameB" name="medicineNameB">
+    <br>
+    <label for="setAlarmTimeB">Set Alarm Time:</label>
+    <input type="time" id="setAlarmTimeB" name="setAlarmTimeB">
+    <br>
+    <label for="remainingTabletsB">Remaining Tablets:</label>
+    <input type="number" id="remainingTabletsB" name="remainingTabletsB" min="0">
+    <br>
+    <label for="lastDispensedTimeB">Last Dispensed Time:</label>
+    <input type="text" id="lastDispensedTimeB" name="lastDispensedTimeB" readonly>
+    <br>
+    <button onclick="setAlarm('ConB')">Set Alarm</button>
+    <button onclick="dispenseMedicine('ConB')">Update Container</button>
+  </div>
+
+  <script>
+    async function updateFrontendData(containerId) {
+      try {
+        const containerData = await fetch(`/getContainerData/${containerId}`);
+        if (containerData.ok) {
+          const containerJson = await containerData.json();
+          updateContainerData(containerId, containerJson);
+        } else {
+          console.error(`Error fetching data for Container ${containerId}: ${containerData.statusText}`);
+        }
+      } catch (error) {
+        console.error(`Error updating frontend data for Container ${containerId}: ${error}`);
+      }
+    }
+
+    async function updateContainerData(containerId, data) {
+      const containerElement = document.getElementById(containerId);
+      if (containerElement) {
+        const nameElement = containerElement.querySelector(`#medicineName${containerId.charAt(containerId.length - 1)}`);
+        const remainingElement = containerElement.querySelector(`#remainingTablets${containerId.charAt(containerId.length - 1)}`);
+        const lastDispensedTimeElement = containerElement.querySelector(`#lastDispensedTime${containerId.charAt(containerId.length - 1)}`);
+        
+        if (data) {
+          nameElement.value = data.name;
+          remainingElement.value = data.remaining;
+          lastDispensedTimeElement.value = data.lastDispensedTime || '';
+        } else {
+          console.error(`Data for Container ${containerId} is undefined.`);
+        }
+      } else {
+        console.error(`Container element with ID ${containerId} not found.`);
+      }
+    }
+
+    async function dispenseMedicine(containerId) {
+      const remainingElement = document.getElementById(`remainingTablets${containerId.charAt(containerId.length - 1)}`);
+      let remainingTablets = parseInt(remainingElement.value);
+
+      if (remainingTablets > 0) {
+        remainingTablets--;
+        remainingElement.value = remainingTablets;
+        const lastDispensedTimeElement = document.getElementById(`lastDispensedTime${containerId.charAt(containerId.length - 1)}`);
+        lastDispensedTimeElement.value = moment().format('YYYY-MM-DD HH:mm:ss');
+        const nameElement = document.getElementById(`medicineName${containerId.charAt(containerId.length - 1)}`);
+        const timeElement = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`);
+        const name = nameElement.value;
+        const time = timeElement.value;
+
+        try {
+          const response = await fetch(`/updateContainerData/${containerId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, time, remaining: remainingTablets, lastDispensedTime: lastDispensedTimeElement.value }),
+          });
+
+          if (response.ok) {
+            console.log(`Container ${containerId} data updated successfully on the server.`);
+          } else {
+            console.error(`Error updating data for Container ${containerId} on the server: ${response.statusText}`);
+          }
+        } catch (error) {
+          console.error(`Error updating container data on the server for Container ${containerId}: ${error}`);
+        }
+        alert(`Medicine dispensed for Container ${containerId}. Remaining Tablets: ${remainingTablets}`);
+      } else {
+        alert(`No remaining tablets for Container ${containerId}.`);
+      }
+    }
+
+    function setAlarm(containerId) {
+      const setAlarmTime = document.getElementById(`setAlarmTime${containerId.charAt(containerId.length - 1)}`).value;
+
+      const currentTime = moment().tz('Asia/Kolkata');
+    const currentDate = moment().tz('Asia/Kolkata').format('YYYY-MM-DD');
+        const setTime = moment.tz(`${currentDate}T${setAlarmTime}:00`, 'Asia/Kolkata');
+
+      if (setTime.isAfter(currentTime)) {
+        const timeDiff = setTime.diff(currentTime);
+
+        setTimeout(() => {
+          alert(`Alarm for Container ${containerId} is set for ${setTime.format('HH:mm')} in Asia/Kolkata timezone.`);
+        }, timeDiff);
+      } else {
+        alert(`Please set a future time for the alarm.`);
+      }
+    }
+    updateFrontendData('ConA');
+    updateFrontendData('ConB');
+  </script>
+</body>
+</html>

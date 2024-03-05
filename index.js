@@ -3,6 +3,11 @@ import { initializeApp } from "firebase/app";
 import express from 'express';
 import bodyParser from 'body-parser';
 import { getDatabase, ref, set, get } from "firebase/database";
+import path from 'path';
+import dirname from 'path';
+import fileURLToPath from 'url';
+
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_t2uXQXKX2h5LkTieKGUhx5B_pqXKXpE",
@@ -13,8 +18,7 @@ const firebaseConfig = {
   appId: "1:768247340002:web:e0caa89eda6a814602b7bb",
   measurementId: "G-XWT10HCP32",
   databaseURL: "https://remote-control-pi-6c1c2-default-rtdb.asia-southeast1.firebasedatabase.app"
-};
-
+};const __dirname = path.resolve();
 const app = initializeApp(firebaseConfig);
 
 async function startServer() {
@@ -57,7 +61,11 @@ async function startServer() {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-
+  // Route to serve dispenser.html
+ // Route to serve dispenser.html
+  express_app.get('/dispenser', (req, res) => {
+    res.sendFile(path.join(__dirname, 'layouts', 'dispenser.html'));
+  });
   express_app.get('/getContainerData/:containerId', async (req, res) => {
     try {
       const containerId = req.params.containerId;
